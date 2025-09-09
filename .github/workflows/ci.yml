@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # # Install Firefox (preinstalled on ubuntu-latest but keep this to be explicit & future-proof)
+      # - name: Install Chrome
+      #   run: |
+      #     wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+      #     sudo mkdir -p /etc/apt/sources.list.d
+      #     sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+      #     sudo apt-get update
+      #     sudo apt-get -y install google-chrome-stable
+      # - name: Install ChromeDriver
+      #   run: |
+      #     # Using specific ChromeDriver version for Chrome I used 132
+      #     CHROMEDRIVER_VERSION="140.0.7339.80"
+      #     echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
+      #     wget -q "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/$CHROMEDRIVER_VERSION/linux64/chromedriver-linux64.zip"
+      #     unzip chromedriver-linux64.zip
+      #     chmod +x chromedriver-linux64/chromedriver
+      #     sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+      # 👉 Use the GitHub Action you referenced
+      - name: Set up Google Chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable   # or 'beta' / a specific version
+          install-chromedriver: true
+
+      - name: Show Chrome info (debug)
+        run: |
+          echo "CHROME_PATH=$CHROME_PATH"
+          $CHROME_PATH --version || google-chrome --version || true
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          # DINNOVA_QA_LOGIN_URL: ${{ secrets.DINNOVA_QA_LOGIN_URL }}
+          # DINNOVA_QA_USERNAME: ${{ secrets.DINNOVA_QA_LOGIN_USERNAME }}
+          # DINNOVA_QA_PASSWORD: ${{ secrets.DINNOVA_QA_LOGIN_PASSWORD }}
+          DINNOVA_QA_LOGIN_URL: "https://app.zytrack.ch/login"
+          DINNOVA_QA_USERNAME: "datacode0023@gmail.com"
+          DINNOVA_QA_PASSWORD: "Aasdasdasd323!"
+        run: |
+          pytest -o log_cli=true --log-cli-level=DEBUG -s -vv
